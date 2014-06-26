@@ -15,8 +15,8 @@ function installModule($moduleName) {
     }
 }
 
-installModule pscx
-installModule Find-String
-installModule psake
+#installModule pscx
+#installModule Find-String
+#installModule psake
 installModule PSReadline
 installModule posh-git
