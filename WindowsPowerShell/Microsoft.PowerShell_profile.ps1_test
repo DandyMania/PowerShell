@@ -1,0 +1,165 @@
+
+
+# コマンド履歴
+$MaximumHistoryCount = 31KB
+$historyFilePath = "~/_pscmdhistory"
+if ( Test-Path $historyFilePath )
+{
+	Import-Csv $historyFilePath | Add-History
+}
+
+#-----------------------------
+# コマンドプロンプトカスタム
+#-----------------------------
+<# マルチラインコメント
+function Prompt
+{
+	$promptString = "PS " + $(Get-Location) + ">"
+
+	# Custom color for Windows console
+	if ( $Host.Name -eq "ConsoleHost" )
+	{
+	    Write-Host $promptString -NoNewline -ForegroundColor Yellow
+	}
+	# Default color for the rest
+	else
+	{
+	    Write-Host $promptString -NoNewline
+	}
+
+	return " "
+}
+#>
+
+
+
+
+function prompt {
+	# our theme
+	$cdelim = [ConsoleColor]::DarkCyan
+	$chost = [ConsoleColor]::DarkGreen
+	$cloc = [ConsoleColor]::DarkYellow
+
+	#背景色設定
+	#$host.ui.rawui.backgroundcolor = "DarkGray"
+
+	# コマンド履歴
+	$latestHistory = Get-History -Count 1
+	if($script:lastHistory -ne $latestHistory) {
+		$csv = ConvertTo-Csv $latestHistory
+
+		if( -not(Test-Path $historyFilePath)) {
+			Out-File $historyFilePath -InputObject $csv[0] -Encoding UTF8
+			Out-File $historyFilePath -InputObject $csv[1] -Encoding UTF8 -Append
+		}
+		Out-File $historyFilePath -InputObject $csv[-1] -Encoding UTF8 -Append
+
+		$script:lastHistory = $latestHistory
+	}
+
+	
+	write-host '[' ([net.dns]::GetHostName()) -n -f $chost
+	write-host '@ ' -n -f $cdelim
+	write-host (shorten-path (pwd).Path) -n -f $cloc
+	write-host ' ~]' -n -f $cdelim
+	write-host "$([char]0x0A7)" -n -f $chost
+	return ' '
+}
+function shorten-path([string] $path) {
+	$loc = $path.Replace($HOME, '~')
+	# remove prefix for UNC paths
+	$loc = $loc -replace '^[^:]+::', ''
+	# make path shorter like tabs in Vim,
+	# handle paths starting with \\ and . correctly
+	return ($loc -replace '\\(\.?)([^\\])[^\\]*(?=\\)','\$1$2')
+}
+
+
+
+Import-Module Pscx -DisableNameChecking #-arg "$(Split-Path $profile -parent)\Pscx.UserPreferences.ps1"
+
+
+#-----------------------------------------
+# PSReadLine
+#-----------------------------------------
+if ($host.Name -eq 'ConsoleHost')
+{
+   Import-Module PSReadline
+}
+
+if ((Get-Module PSReadLine -ListAvailable) -ne $null) {
+    Import-Module PSReadLine
+
+    Set-PSReadlineOption -EditMode Emacs
+    Set-PSReadlineOption -BellStyle None
+
+    Set-PSReadlineKeyHandler -Key UpArrow -Function HistorySearchBackward
+    Set-PSReadlineKeyHandler -Key DownArrow -Function HistorySearchForward
+    Set-PSReadlineKeyHandler -Key Tab -Function Complete
+}
+
+
+#-----------------------------------------
+# Alias
+#-----------------------------------------
+
+# パス一覧見やすく表示
+function path(){echo ($Env:path).split(';')}
+
+# セットアップ
+function setup(){
+
+	if( install.ps1 ){
+	
+	}
+}
+
+# svn更新
+function up(){TortoiseProc.exe /command:update /path:"./" /closeonend:1}
+# いろいろクリーンにする
+function cl(){taskkill /f /im devenv.exe; TortoiseProc.exe /command:cleanup /nodlg /externals /delunversioned /delignored /path:"./"}
+
+# コンパクトモードのデータドライブ設定(powershellにしたので置き換え不要)
+# Set-Alias -name setdrive -value setdrive.bat
+
+# tranckを現在のbranchにマージ
+function mgt(){svn up;svn merge $Env:SOURCE_REPO}
+# ヘルプ
+function help(){cls;.\start.bat}
+# プログラムフォルダを開く
+function ex(){explorer "$Env:PROJECT_TOP"}
+
+# プロジェクト関連
+Set-Alias -name reload -value .\start.bat
+
+# プロジェクトをビルドする
+function mk([string]$path,[switch]$help)
+{
+	if ( $help ){
+		Write-Host "これはSay-Hello関数の説明です"
+		return;
+	}
+	pushd $path
+	cmd /c $Env:PREMAKE_CMD
+	popd
+}
+
+function mksys()	{pushd $Env:LIBRARY_DIR	;cmd /c $Env:PREMAKE_CMD	;popd}
+function mksys13()	{pushd $Env:LIBRARY_DIR	;cmd /c $Env:PREMAKE_CMD13	;popd}
+function opsys()	{cmd /c "$Env:LIBRARY_DIR\Kepsys.sln"} 
+function opark()	{cmd /c "$Env:LIBRARY_DIR\ark\arkKEP.sln"} 
+function buildark()	{
+	cmd /c msbuild "$Env:LIBRARY_DIR\ark\arkKEP.sln" /t:Rebuild /p:Configuration=makedepend
+	cmd /c msbuild "%PROJECT_TOP%\kepsys\ark\arkKEP.sln" /t:Rebuild /p:Configuration=Debug
+	cmd /c msbuild "%PROJECT_TOP%\kepsys\ark\arkKEP.sln" /t:Rebuild /p:Configuration=Release
+}
+
+# BTLib
+function opbt()	{cmd /c "$Env:LIBRARY_DIR\BTLib\project\BTLibrary.sln"}
+function mkbt()	{pushd $Env:LIBRARY_DIR\BTLib	;cmd /c $Env:PREMAKE_CMD	;popd}
+function mkbt13()	{pushd $Env:LIBRARY_DIR\BTLib	;cmd /c $Env:PREMAKE_CMD13	;popd}
+
+
+# MsBuild(Jenkinsテスト用)
+function buildgame(){cmd /c msbuild "launcher/net_kids_monster.sln" /t:Rebuild /p:Configuration=Debug}
+function buildsys() {cmd /c msbuild "$Env:LIBRARY_DIR\Kepsys.sln" /t:Rebuild /p:Configuration=Debug}
