@@ -3,8 +3,8 @@ PowerShell
 
 settings to customize the powershell
 
-* copy to C:\Users\????\Documents\WindowsPowerShell
-
+ 1. copy to C:\Users\????\Documents\WindowsPowerShell
+ 1. execute install.ps1
 
 # reference sites
 * PowerShell でコマンドレットの履歴を保存する<BR>
