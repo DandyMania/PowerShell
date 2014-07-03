@@ -5,6 +5,10 @@ settings to customize the powershell
 
  1. copy to C:\Users\????\Documents\WindowsPowerShell
  1. execute install.ps1
+"""
+powershell -NoProfile -ExecutionPolicy unrestricted -command if (!(test-path $profile.CurrentUserAllHosts )) {new-item -type file -path $profile.CurrentUserAllHosts -force} 
+powershell -NoProfile -ExecutionPolicy unrestricted -command Copy-Item profile.ps1 $profile.CurrentUserAllHosts
+"""
 
 # reference sites
 * PowerShell でコマンドレットの履歴を保存する<BR>
